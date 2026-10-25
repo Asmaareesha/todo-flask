@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>To-Do List</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>To-Do List</h1>
+
+    <p class="progress">
+      {{ done_count }} of {{ total }} completed
+      {% if overdue_count %}
+        · <span class="overdue-text">{{ overdue_count }} overdue</span>
+      {% endif %}
+    </p>
+
+    {% if error %}
+      <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <form class="task-form" method="post"
+          action="{% if editing %}{{ url_for('update', task_id=editing.id) }}{% else %}{{ url_for('add') }}{% endif %}">
+      <input type="text" name="title" placeholder="What needs doing?"
+             value="{{ editing.title if editing else '' }}" required>
+
+      <select name="priority">
+        {% for p in ['High', 'Medium', 'Low'] %}
+          <option value="{{ p }}"
+            {% if (editing and editing.priority == p) or (not editing and p == 'Medium') %}selected{% endif %}>
+            {{ p }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <input type="date" name="due" value="{{ editing.due if editing else '' }}">
+
+      <button type="submit">{% if editing %}Save changes{% else %}Add task{% endif %}</button>
+      {% if editing %}
+        <a class="cancel" href="{{ url_for('index') }}">Cancel</a>
+      {% endif %}
+    </form>
+
+    <form class="search-form" method="get" action="{{ url_for('index') }}">
+      <input type="text" name="q" placeholder="Search tasks..." value="{{ keyword }}">
+      <button type="submit">Search</button>
+      {% if keyword %}
+        <a class="cancel" href="{{ url_for('index') }}">Clear</a>
+      {% endif %}
+    </form>
+
+    <ul class="tasks">
+      {% for task in tasks %}
+        <li class="task {{ task.status }}">
+          <form method="post" action="{{ url_for('toggle', task_id=task.id) }}">
+            <button class="small" type="submit">
+              {% if task.done %}Undo{% else %}Done{% endif %}
+            </button>
+          </form>
+
+          <div class="info">
+            <div class="title">{{ task.title }}</div>
+            <div class="meta">
+              {{ task.priority }} priority
+              {% if task.due %} · due {{ task.due }}{% endif %}
+              {% if task.status == 'overdue' %} · OVERDUE{% endif %}
+            </div>
+          </div>
+
+          <div class="actions">
+            <a class="edit-link" href="{{ url_for('index', edit=task.id) }}">Edit</a>
+            <form method="post" action="{{ url_for('delete', task_id=task.id) }}"
+                  onsubmit="return confirm('Delete this task?');">
+              <button class="small delete" type="submit">Delete</button>
+            </form>
+          </div>
+        </li>
+      {% else %}
+        <li class="empty">No tasks to show.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</body>
+</html>
